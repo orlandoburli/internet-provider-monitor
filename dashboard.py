@@ -312,6 +312,35 @@ def ping_hosts():
     } for row in results])
 
 
+@app.route('/api/speed/history')
+def speed_history():
+    """Get speed test history for charting"""
+    hours = int(request.args.get('hours', 24))
+    
+    query = """
+        SELECT 
+            cc.timestamp,
+            st.provider,
+            st.download_mbps,
+            st.upload_mbps
+        FROM speed_tests st
+        JOIN connection_checks cc ON st.check_id = cc.id
+        WHERE 
+            st.success = true
+            AND cc.timestamp >= NOW() - INTERVAL '%s hours'
+        ORDER BY cc.timestamp ASC
+    """
+    
+    results = db.execute_query(query, (hours,))
+    
+    return jsonify([{
+        'timestamp': row['timestamp'].isoformat(),
+        'provider': row['provider'],
+        'download_mbps': float(row['download_mbps']) if row['download_mbps'] else None,
+        'upload_mbps': float(row['upload_mbps']) if row['upload_mbps'] else None
+    } for row in results])
+
+
 @app.route('/api/summary')
 def summary():
     """Get complete summary for dashboard"""

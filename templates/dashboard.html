@@ -214,6 +214,20 @@
             </div>
         </div>
         
+        <!-- Speed History Chart Row -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Speed Test History by Provider (Last 24h)</h5>
+                        <div class="chart-container" style="height: 400px;">
+                            <canvas id="speedHistoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Speed Stats & Ping Stats Row -->
         <div class="row">
             <!-- Speed Test Statistics -->
@@ -251,8 +265,9 @@
     
     <!-- Custom JS -->
     <script>
-        // Chart instance
+        // Chart instances
         let timelineChart = null;
+        let speedHistoryChart = null;
         
         // Auto-refresh interval (5 seconds)
         const REFRESH_INTERVAL = 5000;
@@ -292,7 +307,8 @@
                 loadTimeline(),
                 loadSpeedTests(),
                 loadSpeedStats(),
-                loadPingStats()
+                loadPingStats(),
+                loadSpeedHistory()
             ]);
             
             updateLastUpdateTime();
@@ -547,6 +563,156 @@
                 console.error('Error loading ping stats:', error);
                 document.getElementById('ping-stats').innerHTML = 
                     '<p class="text-danger">Error loading ping statistics</p>';
+            }
+        }
+        
+        // Load speed history chart
+        async function loadSpeedHistory() {
+            try {
+                const response = await fetch('/api/speed/history?hours=24');
+                const data = await response.json();
+                
+                if (data.length === 0) {
+                    return;
+                }
+                
+                // Organize data by provider
+                const providers = {};
+                data.forEach(item => {
+                    if (!providers[item.provider]) {
+                        providers[item.provider] = {
+                            download: [],
+                            upload: [],
+                            timestamps: []
+                        };
+                    }
+                    
+                    const time = new Date(item.timestamp);
+                    const timeString = time.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                    
+                    providers[item.provider].timestamps.push(timeString);
+                    providers[item.provider].download.push(item.download_mbps);
+                    providers[item.provider].upload.push(item.upload_mbps);
+                });
+                
+                // Create datasets for each provider
+                const datasets = [];
+                const colors = {
+                    'speedtest.net': { download: 'rgba(255, 99, 132, 1)', upload: 'rgba(255, 99, 132, 0.5)' },
+                    'speed.cloudflare.com': { download: 'rgba(54, 162, 235, 1)', upload: 'rgba(54, 162, 235, 0.5)' },
+                    'proof.ovh.net': { download: 'rgba(75, 192, 192, 1)', upload: 'rgba(75, 192, 192, 0.5)' }
+                };
+                
+                // Get all unique timestamps (for x-axis)
+                const allTimestamps = [...new Set(data.map(item => {
+                    const time = new Date(item.timestamp);
+                    return time.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                }))];
+                
+                // Create datasets for each provider
+                Object.keys(providers).forEach(provider => {
+                    const providerColor = colors[provider] || {
+                        download: 'rgba(153, 102, 255, 1)',
+                        upload: 'rgba(153, 102, 255, 0.5)'
+                    };
+                    
+                    // Download dataset
+                    if (providers[provider].download.some(v => v !== null)) {
+                        datasets.push({
+                            label: `${provider} - Download`,
+                            data: providers[provider].download,
+                            borderColor: providerColor.download,
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            tension: 0.4
+                        });
+                    }
+                    
+                    // Upload dataset (if available)
+                    if (providers[provider].upload.some(v => v !== null)) {
+                        datasets.push({
+                            label: `${provider} - Upload`,
+                            data: providers[provider].upload,
+                            borderColor: providerColor.upload,
+                            backgroundColor: 'transparent',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 3,
+                            pointHoverRadius: 5,
+                            tension: 0.4
+                        });
+                    }
+                });
+                
+                // Use timestamps from the provider with most data
+                const mainProvider = Object.keys(providers)[0];
+                const labels = providers[mainProvider].timestamps;
+                
+                const ctx = document.getElementById('speedHistoryChart').getContext('2d');
+                
+                if (speedHistoryChart) {
+                    speedHistoryChart.destroy();
+                }
+                
+                speedHistoryChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        let label = context.dataset.label || '';
+                                        if (label) {
+                                            label += ': ';
+                                        }
+                                        if (context.parsed.y !== null) {
+                                            label += context.parsed.y.toFixed(2) + ' Mbps';
+                                        }
+                                        return label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Speed (Mbps)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + ' Mbps';
+                                    }
+                                }
+                            },
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Time'
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading speed history:', error);
             }
         }
     </script>
