@@ -23,7 +23,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY monitor_internet.py .
 COPY generate_report.py .
 COPY database.py .
+COPY dashboard.py .
 COPY config.json .
+
+# Copia templates para dashboard
+COPY templates/ ./templates/
 
 # Cria diretórios para logs e relatórios
 RUN mkdir -p /app/logs /app/relatorios

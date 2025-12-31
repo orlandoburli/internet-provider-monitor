@@ -10,7 +10,8 @@ Sistema completo de monitoramento de conexão de internet com armazenamento em b
 - 💾 **PostgreSQL Database**: All data stored in relational database for advanced analytics
 - 📝 **Detailed Logs**: JSONL files with timestamps and results
 - 📄 **Automatic Reports**: Generates reports automatically every minute
-- 📈 **Dashboards**: Connect Grafana, Metabase, or Superset for real-time visualization
+- 🎨 **Real-Time Dashboard**: Beautiful web dashboard with live metrics and charts
+- 📈 **Analytics**: Built-in REST API for custom integrations
 - ⚙️ **Configurable**: Easy customization through JSON config file
 - 🐳 **Docker Ready**: Fully containerized with PostgreSQL included
 
@@ -27,7 +28,7 @@ Sistema completo de monitoramento de conexão de internet com armazenamento em b
 ### 1. Start the System
 
 ```bash
-# Start all services (PostgreSQL + Monitor)
+# Start all services (PostgreSQL + Monitor + Dashboard)
 docker compose up -d
 
 # Check logs
@@ -38,9 +39,29 @@ That's it! The system is now:
 - ✅ Monitoring your connection every 10 seconds (configurable)
 - ✅ Saving data to PostgreSQL database
 - ✅ Generating automatic reports
+- ✅ **Web dashboard available at http://localhost:8080**
 - ✅ Running 24/7 in the background
 
-### 2. View Reports
+### 2. Access the Dashboard
+
+Open your browser and go to:
+
+```
+http://localhost:8080
+```
+
+The dashboard shows:
+- 🟢 Current connection status (Online/Offline)
+- 📊 Today's uptime and statistics
+- 📈 Last 24 hours metrics
+- 🚀 Recent speed test results
+- 📉 Connection timeline chart
+- 📍 Ping statistics by host
+- ⚡ Speed test statistics with min/max/avg
+
+**Auto-refresh**: Dashboard updates automatically every 5 seconds
+
+### 3. View Reports
 
 Reports are automatically generated in the `relatorios/` directory:
 
@@ -52,7 +73,7 @@ cat relatorios/relatorio_parcial_$(date +%Y-%m-%d).txt
 cat relatorios/relatorio_detalhado_$(date +%Y-%m-%d).txt
 ```
 
-### 3. Access Database
+### 4. Access Database
 
 ```bash
 # Connect to PostgreSQL
@@ -224,7 +245,63 @@ All reports include:
 
 ---
 
-## 📈 Dashboards & Integrations
+## 🎨 Real-Time Dashboard
+
+### Built-in Web Dashboard
+
+The system includes a beautiful, modern web dashboard that displays all metrics in real-time.
+
+**URL:** `http://localhost:8080`
+
+**Features:**
+- 🔄 Auto-refreshes every 5 seconds
+- 📊 Current connection status
+- 📈 Uptime percentage (today and last 24h)
+- 🚀 Speed test results with provider comparison
+- 📉 Interactive timeline chart
+- 📍 Ping statistics by host
+- ⚡ Detailed speed test statistics (min/max/avg)
+- 🎯 Outage counter and recent failures
+
+**Technology:**
+- Flask backend
+- Bootstrap 5 UI
+- Chart.js for visualizations
+- Responsive design
+
+### REST API Endpoints
+
+The dashboard also provides a REST API for custom integrations:
+
+- `GET /api/status/current` - Current connection status
+- `GET /api/stats/today` - Today's statistics
+- `GET /api/stats/last24h` - Last 24 hours statistics
+- `GET /api/history/timeline?hours=24` - Connection timeline data
+- `GET /api/speed/current` - Recent speed tests
+- `GET /api/speed/stats?hours=24` - Speed test statistics
+- `GET /api/outages/recent` - Recent outages
+- `GET /api/ping/hosts?hours=24` - Ping statistics by host
+- `GET /health` - Health check endpoint
+
+**Example API call:**
+```bash
+curl http://localhost:8080/api/status/current
+```
+
+**Example response:**
+```json
+{
+  "timestamp": "2025-12-31T18:45:00",
+  "status": "online",
+  "success_rate": 100.0,
+  "date": "2025-12-31",
+  "time": "18:45:00"
+}
+```
+
+---
+
+## 📈 External Dashboards & Integrations
 
 ### Grafana
 
@@ -325,12 +402,16 @@ project-telecom-anoing/
 ├── monitor_internet.py      # Main monitoring script
 ├── generate_report.py        # Report generator
 ├── database.py               # Database manager
+├── dashboard.py              # Real-time web dashboard
 ├── config.json               # Configuration file
 ├── requirements.txt          # Python dependencies
 │
 ├── Dockerfile                # Docker image definition
 ├── docker-compose.yml        # Docker orchestration
 ├── init-db.sql              # Database initialization
+│
+├── templates/                # Dashboard HTML templates
+│   └── dashboard.html
 │
 ├── logs/                     # Log files (auto-generated)
 │   └── log_YYYY-MM-DD.jsonl

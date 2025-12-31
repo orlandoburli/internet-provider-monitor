@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internet Monitor - Real-Time Dashboard</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
+    <!-- Custom CSS -->
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,.1);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.1);
+            margin-bottom: 20px;
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,.15);
+        }
+        
+        .status-online {
+            color: #28a745;
+            font-weight: bold;
+        }
+        
+        .status-offline {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .metric-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .badge-status {
+            font-size: 1rem;
+            padding: 8px 16px;
+        }
+        
+        .refresh-indicator {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            padding: 8px 16px;
+            background: #007bff;
+            color: white;
+            border-radius: 20px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+        
+        .refresh-indicator.active {
+            opacity: 1;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        .last-update {
+            color: #6c757d;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-top: 10px;
+        }
+        
+        .speed-provider {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .ping-host {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                🌐 Internet Monitor - Real-Time Dashboard
+            </span>
+            <span class="text-white">
+                <span id="auto-refresh-status">Auto-refresh: ON</span>
+            </span>
+        </div>
+    </nav>
+    
+    <!-- Refresh Indicator -->
+    <div id="refresh-indicator" class="refresh-indicator">
+        Updating...
+    </div>
+    
+    <div class="container-fluid mt-4">
+        <!-- Current Status Row -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Current Status</h5>
+                        <div id="current-status">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="last-update" id="status-last-update"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats Cards Row -->
+        <div class="row">
+            <!-- Today's Stats -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h6 class="metric-label">Today's Uptime</h6>
+                        <div class="metric-value text-primary" id="today-uptime">--%</div>
+                        <div class="text-muted">
+                            <small id="today-checks">-- checks</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Last 24h Stats -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h6 class="metric-label">Last 24h Uptime</h6>
+                        <div class="metric-value text-success" id="last24h-uptime">--%</div>
+                        <div class="text-muted">
+                            <small id="last24h-checks">-- checks</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Outages -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h6 class="metric-label">Outages (24h)</h6>
+                        <div class="metric-value text-danger" id="outages-count">--</div>
+                        <div class="text-muted">
+                            <small>connection failures</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Row -->
+        <div class="row">
+            <!-- Timeline Chart -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Connection Timeline (Last 24h)</h5>
+                        <div class="chart-container">
+                            <canvas id="timelineChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Speed Tests -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Recent Speed Tests</h5>
+                        <div id="speed-tests-list">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Speed Stats & Ping Stats Row -->
+        <div class="row">
+            <!-- Speed Test Statistics -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Speed Test Statistics (Last 24h)</h5>
+                        <div id="speed-stats">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ping Statistics by Host -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Ping Statistics by Host (Last 24h)</h5>
+                        <div id="ping-stats">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script>
+        // Chart instance
+        let timelineChart = null;
+        
+        // Auto-refresh interval (5 seconds)
+        const REFRESH_INTERVAL = 5000;
+        let refreshTimer = null;
+        
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllData();
+            startAutoRefresh();
+        });
+        
+        // Start auto-refresh
+        function startAutoRefresh() {
+            refreshTimer = setInterval(() => {
+                loadAllData();
+            }, REFRESH_INTERVAL);
+        }
+        
+        // Show refresh indicator
+        function showRefreshIndicator() {
+            const indicator = document.getElementById('refresh-indicator');
+            indicator.classList.add('active');
+            setTimeout(() => {
+                indicator.classList.remove('active');
+            }, 1000);
+        }
+        
+        // Load all dashboard data
+        async function loadAllData() {
+            showRefreshIndicator();
+            
+            await Promise.all([
+                loadCurrentStatus(),
+                loadTodayStats(),
+                loadLast24hStats(),
+                loadOutages(),
+                loadTimeline(),
+                loadSpeedTests(),
+                loadSpeedStats(),
+                loadPingStats()
+            ]);
+            
+            updateLastUpdateTime();
+        }
+        
+        // Update last update timestamp
+        function updateLastUpdateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('status-last-update').textContent = 
+                `Last updated: ${timeString}`;
+        }
+        
+        // Load current status
+        async function loadCurrentStatus() {
+            try {
+                const response = await fetch('/api/status/current');
+                const data = await response.json();
+                
+                const statusHtml = `
+                    <h2 class="${data.status === 'online' ? 'status-online' : 'status-offline'}">
+                        ${data.status === 'online' ? '✅ ONLINE' : '❌ OFFLINE'}
+                    </h2>
+                    <p class="text-muted">Success Rate: ${data.success_rate}%</p>
+                    <p class="text-muted small">
+                        ${new Date(data.timestamp).toLocaleString()}
+                    </p>
+                `;
+                
+                document.getElementById('current-status').innerHTML = statusHtml;
+            } catch (error) {
+                console.error('Error loading current status:', error);
+                document.getElementById('current-status').innerHTML = 
+                    '<p class="text-danger">Error loading status</p>';
+            }
+        }
+        
+        // Load today's stats
+        async function loadTodayStats() {
+            try {
+                const response = await fetch('/api/stats/today');
+                const data = await response.json();
+                
+                document.getElementById('today-uptime').textContent = 
+                    `${data.uptime_percentage}%`;
+                document.getElementById('today-checks').textContent = 
+                    `${data.total_checks} checks (${data.online_checks} online, ${data.offline_checks} offline)`;
+            } catch (error) {
+                console.error('Error loading today stats:', error);
+            }
+        }
+        
+        // Load last 24h stats
+        async function loadLast24hStats() {
+            try {
+                const response = await fetch('/api/stats/last24h');
+                const data = await response.json();
+                
+                document.getElementById('last24h-uptime').textContent = 
+                    `${data.uptime_percentage}%`;
+                document.getElementById('last24h-checks').textContent = 
+                    `${data.total_checks} checks`;
+            } catch (error) {
+                console.error('Error loading last 24h stats:', error);
+            }
+        }
+        
+        // Load outages
+        async function loadOutages() {
+            try {
+                const response = await fetch('/api/outages/recent');
+                const data = await response.json();
+                
+                document.getElementById('outages-count').textContent = data.length;
+            } catch (error) {
+                console.error('Error loading outages:', error);
+            }
+        }
+        
+        // Load timeline chart
+        async function loadTimeline() {
+            try {
+                const response = await fetch('/api/history/timeline?hours=24');
+                const data = await response.json();
+                
+                const labels = data.map(item => {
+                    const date = new Date(item.timestamp);
+                    return date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
+                });
+                
+                const successRates = data.map(item => item.success_rate);
+                const colors = data.map(item => 
+                    item.status === 'online' ? 'rgba(40, 167, 69, 0.8)' : 'rgba(220, 53, 69, 0.8)'
+                );
+                
+                const ctx = document.getElementById('timelineChart').getContext('2d');
+                
+                if (timelineChart) {
+                    timelineChart.destroy();
+                }
+                
+                timelineChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Success Rate %',
+                            data: successRates,
+                            borderColor: 'rgba(0, 123, 255, 1)',
+                            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading timeline:', error);
+            }
+        }
+        
+        // Load speed tests
+        async function loadSpeedTests() {
+            try {
+                const response = await fetch('/api/speed/current');
+                const data = await response.json();
+                
+                if (data.length === 0) {
+                    document.getElementById('speed-tests-list').innerHTML = 
+                        '<p class="text-muted">No speed test data available</p>';
+                    return;
+                }
+                
+                let html = '';
+                data.slice(0, 5).forEach(test => {
+                    html += `
+                        <div class="speed-provider">
+                            <strong>${test.provider}</strong><br>
+                            <small class="text-muted">${new Date(test.timestamp).toLocaleString()}</small><br>
+                            ↓ ${test.download_mbps || '--'} Mbps &nbsp;&nbsp;
+                            ${test.upload_mbps ? `↑ ${test.upload_mbps} Mbps` : ''}
+                            ${test.ping_ms ? `<br>Ping: ${test.ping_ms} ms` : ''}
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('speed-tests-list').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading speed tests:', error);
+                document.getElementById('speed-tests-list').innerHTML = 
+                    '<p class="text-danger">Error loading speed tests</p>';
+            }
+        }
+        
+        // Load speed stats
+        async function loadSpeedStats() {
+            try {
+                const response = await fetch('/api/speed/stats?hours=24');
+                const data = await response.json();
+                
+                if (data.length === 0) {
+                    document.getElementById('speed-stats').innerHTML = 
+                        '<p class="text-muted">No speed test statistics available</p>';
+                    return;
+                }
+                
+                let html = '';
+                data.forEach(stat => {
+                    html += `
+                        <div class="speed-provider">
+                            <h6>${stat.provider}</h6>
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">Download</small><br>
+                                    <strong>${stat.avg_download || '--'} Mbps</strong><br>
+                                    <small>Min: ${stat.min_download || '--'} / Max: ${stat.max_download || '--'}</small>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Upload</small><br>
+                                    <strong>${stat.avg_upload || '--'} Mbps</strong><br>
+                                    <small>Min: ${stat.min_upload || '--'} / Max: ${stat.max_upload || '--'}</small>
+                                </div>
+                            </div>
+                            ${stat.avg_ping ? `<small class="text-muted">Avg Ping: ${stat.avg_ping} ms</small>` : ''}
+                            <br><small class="text-muted">${stat.total_tests} tests</small>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('speed-stats').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading speed stats:', error);
+                document.getElementById('speed-stats').innerHTML = 
+                    '<p class="text-danger">Error loading speed statistics</p>';
+            }
+        }
+        
+        // Load ping stats
+        async function loadPingStats() {
+            try {
+                const response = await fetch('/api/ping/hosts?hours=24');
+                const data = await response.json();
+                
+                if (data.length === 0) {
+                    document.getElementById('ping-stats').innerHTML = 
+                        '<p class="text-muted">No ping statistics available</p>';
+                    return;
+                }
+                
+                let html = '';
+                data.forEach(stat => {
+                    html += `
+                        <div class="ping-host">
+                            <strong>${stat.host}</strong>
+                            <span class="badge ${stat.success_rate >= 95 ? 'bg-success' : stat.success_rate >= 80 ? 'bg-warning' : 'bg-danger'} float-end">
+                                ${stat.success_rate}%
+                            </span><br>
+                            <small class="text-muted">
+                                Avg: ${stat.avg_response_time || '--'} ms &nbsp;|&nbsp;
+                                Min: ${stat.min_response_time || '--'} ms &nbsp;|&nbsp;
+                                Max: ${stat.max_response_time || '--'} ms
+                            </small><br>
+                            <small class="text-muted">
+                                ${stat.successful_tests}/${stat.total_tests} successful
+                            </small>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('ping-stats').innerHTML = html;
+            } catch (error) {
+                console.error('Error loading ping stats:', error);
+                document.getElementById('ping-stats').innerHTML = 
+                    '<p class="text-danger">Error loading ping statistics</p>';
+            }
+        }
+    </script>
+</body>
+</html>
