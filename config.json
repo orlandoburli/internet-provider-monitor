@@ -1,0 +1,32 @@
+{
+  "check_interval": 10,
+  "report_interval": 60,
+  "enable_speed_tests": true,
+  "enable_database": true,
+  "ping_hosts": [
+    "8.8.8.8",
+    "1.1.1.1",
+    "google.com"
+  ],
+  "http_test_urls": [
+    "https://www.google.com",
+    "https://www.cloudflare.com"
+  ],
+  "speed_test_providers": [
+    "speedtest",
+    "http_download"
+  ],
+  "http_download_urls": [
+    "https://speed.cloudflare.com/__down?bytes=10000000",
+    "https://proof.ovh.net/files/10Mb.dat"
+  ],
+  "logs_directory": "logs",
+  "reports_directory": "relatorios",
+  "ping_timeout": 5,
+  "http_timeout": 10,
+  "db_host": "postgres",
+  "db_port": 5432,
+  "db_name": "internet_monitor",
+  "db_user": "monitor",
+  "db_password": "monitor123"
+}

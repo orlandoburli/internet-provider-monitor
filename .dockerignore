@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Logs e relatórios (serão montados como volumes)
+logs/
+relatorios/
+
+# Git
+.git/
+.gitignore
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentação (exceto requirements.txt)
+*.md
+INICIO.txt
+*.sh
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
