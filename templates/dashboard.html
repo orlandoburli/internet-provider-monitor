@@ -165,11 +165,7 @@
             <span class="navbar-brand mb-0 h1">
                 🌐 Internet Monitor - Real-Time Dashboard
             </span>
-            <div class="d-flex align-items-center">
-                <span class="text-white me-3">
-                    <span id="auto-refresh-status">Auto-refresh: ON</span>
-                </span>
-                
+            <div class="d-flex align-items-center gap-3">
                 <!-- Export Dropdown -->
                 <div class="dropdown">
                     <button class="btn btn-success dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
@@ -182,6 +178,10 @@
                         <li><a class="dropdown-item" href="#" onclick="window.print(); return false;">🖨️ Print Dashboard</a></li>
                     </ul>
                 </div>
+                
+                <span class="text-white">
+                    <small id="auto-refresh-status">Auto-refresh: ON</small>
+                </span>
             </div>
         </div>
     </nav>
