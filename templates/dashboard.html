@@ -11,6 +11,12 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     
+    <!-- html2canvas for screenshots -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
     <!-- Custom CSS -->
     <style>
         body {
@@ -105,18 +111,78 @@
             border-radius: 8px;
             margin-bottom: 8px;
         }
+        
+        .export-dropdown {
+            margin-left: auto;
+        }
+        
+        .export-btn {
+            background: #28a745;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .export-btn:hover {
+            background: #218838;
+        }
+        
+        .dropdown-menu {
+            min-width: 150px;
+        }
+        
+        /* Print styles */
+        @media print {
+            .navbar,
+            .refresh-indicator,
+            .no-print {
+                display: none !important;
+            }
+            
+            .card {
+                page-break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid #dee2e6;
+            }
+            
+            body {
+                background: white;
+            }
+            
+            .chart-container {
+                page-break-inside: avoid;
+            }
+        }
     </style>
 </head>
 <body>
     <!-- Navbar -->
-    <nav class="navbar navbar-dark bg-primary">
+    <nav class="navbar navbar-dark bg-primary no-print">
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
                 🌐 Internet Monitor - Real-Time Dashboard
             </span>
-            <span class="text-white">
-                <span id="auto-refresh-status">Auto-refresh: ON</span>
-            </span>
+            <div class="d-flex align-items-center">
+                <span class="text-white me-3">
+                    <span id="auto-refresh-status">Auto-refresh: ON</span>
+                </span>
+                
+                <!-- Export Dropdown -->
+                <div class="dropdown">
+                    <button class="btn btn-success dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        📥 Export
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportDropdown">
+                        <li><a class="dropdown-item" href="#" onclick="exportToPDF(); return false;">📄 Export as PDF</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportToPNG(); return false;">🖼️ Export as PNG</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="window.print(); return false;">🖨️ Print Dashboard</a></li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </nav>
     
@@ -125,7 +191,7 @@
         Updating...
     </div>
     
-    <div class="container-fluid mt-4">
+    <div class="container-fluid mt-4" id="dashboard-content">
         <!-- Current Status Row -->
         <div class="row">
             <div class="col-md-12">
@@ -713,6 +779,123 @@
                 });
             } catch (error) {
                 console.error('Error loading speed history:', error);
+            }
+        }
+        
+        // Export to PDF
+        async function exportToPDF() {
+            // Show loading indicator
+            const exportBtn = document.getElementById('exportDropdown');
+            const originalText = exportBtn.innerHTML;
+            exportBtn.innerHTML = '⏳ Generating PDF...';
+            exportBtn.disabled = true;
+            
+            try {
+                // Wait a moment for any pending chart renders
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Capture the dashboard content
+                const element = document.getElementById('dashboard-content');
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    logging: false,
+                    useCORS: true,
+                    backgroundColor: '#f8f9fa'
+                });
+                
+                const imgData = canvas.toDataURL('image/png');
+                
+                // Create PDF
+                const { jsPDF } = window.jspdf;
+                
+                // Calculate dimensions
+                const imgWidth = 210; // A4 width in mm
+                const pageHeight = 297; // A4 height in mm
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+                
+                // Create PDF with first page
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+                
+                // Add additional pages if needed
+                while (heightLeft > 0) {
+                    position = heightLeft - imgHeight;
+                    pdf.addPage();
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+                
+                // Generate filename with timestamp
+                const now = new Date();
+                const filename = `internet-monitor-${now.toISOString().slice(0, 10)}_${now.toTimeString().slice(0, 5).replace(':', '')}.pdf`;
+                
+                // Save PDF
+                pdf.save(filename);
+                
+                alert('✅ PDF exported successfully!');
+            } catch (error) {
+                console.error('Error generating PDF:', error);
+                alert('❌ Error generating PDF. Please try again.');
+            } finally {
+                // Restore button
+                exportBtn.innerHTML = originalText;
+                exportBtn.disabled = false;
+            }
+        }
+        
+        // Export to PNG
+        async function exportToPNG() {
+            // Show loading indicator
+            const exportBtn = document.getElementById('exportDropdown');
+            const originalText = exportBtn.innerHTML;
+            exportBtn.innerHTML = '⏳ Generating PNG...';
+            exportBtn.disabled = true;
+            
+            try {
+                // Wait a moment for any pending chart renders
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Capture the dashboard content
+                const element = document.getElementById('dashboard-content');
+                const canvas = await html2canvas(element, {
+                    scale: 2,
+                    logging: false,
+                    useCORS: true,
+                    backgroundColor: '#f8f9fa'
+                });
+                
+                // Convert to blob and download
+                canvas.toBlob(function(blob) {
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    
+                    // Generate filename with timestamp
+                    const now = new Date();
+                    const filename = `internet-monitor-${now.toISOString().slice(0, 10)}_${now.toTimeString().slice(0, 5).replace(':', '')}.png`;
+                    
+                    link.href = url;
+                    link.download = filename;
+                    link.click();
+                    
+                    // Cleanup
+                    window.URL.revokeObjectURL(url);
+                    
+                    alert('✅ PNG exported successfully!');
+                    
+                    // Restore button
+                    exportBtn.innerHTML = originalText;
+                    exportBtn.disabled = false;
+                });
+            } catch (error) {
+                console.error('Error generating PNG:', error);
+                alert('❌ Error generating PNG. Please try again.');
+                
+                // Restore button
+                exportBtn.innerHTML = originalText;
+                exportBtn.disabled = false;
             }
         }
     </script>
