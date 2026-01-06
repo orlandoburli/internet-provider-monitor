@@ -4,7 +4,8 @@ Real-Time Dashboard Service
 Web-based dashboard for monitoring internet connection metrics
 """
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, jsonify, request
+from flask_cors import CORS
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import json
@@ -13,6 +14,7 @@ from typing import Dict, List, Optional
 import os
 
 app = Flask(__name__)
+CORS(app)  # Enable CORS for all routes
 
 class DashboardDatabase:
     """Database connection manager for dashboard"""
@@ -51,8 +53,23 @@ db = DashboardDatabase()
 
 @app.route('/')
 def index():
-    """Main dashboard page"""
-    return render_template('dashboard.html')
+    """API information"""
+    return jsonify({
+        'name': 'Internet Monitor API',
+        'version': '2.0',
+        'endpoints': {
+            'status': '/api/status/current',
+            'stats_today': '/api/stats/today',
+            'stats_24h': '/api/stats/last24h',
+            'timeline': '/api/history/timeline',
+            'speed_current': '/api/speed/current',
+            'speed_stats': '/api/speed/stats',
+            'speed_history': '/api/speed/history',
+            'outages': '/api/outages/recent',
+            'ping_hosts': '/api/ping/hosts',
+            'health': '/health'
+        }
+    })
 
 
 @app.route('/api/status/current')

@@ -70,10 +70,10 @@ services:
       - report
     command: python generate_report.py
 
-  # Serviço de Dashboard em Tempo Real
-  dashboard:
+  # Serviço de Dashboard API (Backend)
+  dashboard-api:
     build: .
-    container_name: internet-dashboard
+    container_name: internet-dashboard-api
     restart: unless-stopped
     depends_on:
       postgres:
@@ -91,6 +91,20 @@ services:
     networks:
       - monitor_network
     command: python -u dashboard.py
+
+  # Serviço de Frontend (Next.js + React)
+  dashboard-frontend:
+    build: ./frontend
+    container_name: internet-dashboard-frontend
+    restart: unless-stopped
+    depends_on:
+      - dashboard-api
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8080
+    networks:
+      - monitor_network
 
 volumes:
   postgres_data:
