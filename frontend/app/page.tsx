@@ -85,19 +85,20 @@ export default function Dashboard() {
   }, [autoRefresh]);
 
   const handleExportPDF = async () => {
+    const wasAutoRefresh = autoRefresh;
+    
     try {
       const element = document.getElementById('dashboard-content');
       if (!element) return;
 
-      // Show loading state
-      const originalText = 'Exporting...';
-      
       // Temporarily hide export button and toggle auto-refresh off
-      const wasAutoRefresh = autoRefresh;
       setAutoRefresh(false);
 
       // Wait a bit for any animations to complete
       await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Add export class to convert colors
+      document.body.classList.add('export-mode');
 
       // Capture the dashboard
       const canvas = await html2canvas(element, {
@@ -105,6 +106,23 @@ export default function Dashboard() {
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        ignoreElements: (element) => {
+          return element.classList?.contains('no-export');
+        },
+        onclone: (clonedDoc) => {
+          // Convert modern color formats to RGB
+          const clonedBody = clonedDoc.body;
+          clonedBody.style.setProperty('--background', '#ffffff');
+          clonedBody.style.setProperty('--foreground', '#09090b');
+          clonedBody.style.setProperty('--card', '#ffffff');
+          clonedBody.style.setProperty('--card-foreground', '#09090b');
+          clonedBody.style.setProperty('--primary', '#18181b');
+          clonedBody.style.setProperty('--primary-foreground', '#fafafa');
+          clonedBody.style.setProperty('--secondary', '#f4f4f5');
+          clonedBody.style.setProperty('--muted', '#f4f4f5');
+          clonedBody.style.setProperty('--muted-foreground', '#71717a');
+          clonedBody.style.setProperty('--border', '#e4e4e7');
+        }
       });
 
       // Calculate PDF dimensions
@@ -133,25 +151,36 @@ export default function Dashboard() {
       const fileName = `internet-monitor-${new Date().toISOString().slice(0, 10)}.pdf`;
       pdf.save(fileName);
 
+      // Remove export class
+      document.body.classList.remove('export-mode');
+
       // Restore auto-refresh
       setAutoRefresh(wasAutoRefresh);
     } catch (error) {
       console.error('Error exporting PDF:', error);
       alert('Failed to export PDF. Please try again.');
+      
+      // Cleanup on error
+      document.body.classList.remove('export-mode');
+      setAutoRefresh(wasAutoRefresh);
     }
   };
 
   const handleExportPNG = async () => {
+    const wasAutoRefresh = autoRefresh;
+    
     try {
       const element = document.getElementById('dashboard-content');
       if (!element) return;
 
       // Temporarily toggle auto-refresh off
-      const wasAutoRefresh = autoRefresh;
       setAutoRefresh(false);
 
       // Wait a bit for any animations to complete
       await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Add export class to convert colors
+      document.body.classList.add('export-mode');
 
       // Capture the dashboard
       const canvas = await html2canvas(element, {
@@ -159,6 +188,23 @@ export default function Dashboard() {
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
+        ignoreElements: (element) => {
+          return element.classList?.contains('no-export');
+        },
+        onclone: (clonedDoc) => {
+          // Convert modern color formats to RGB
+          const clonedBody = clonedDoc.body;
+          clonedBody.style.setProperty('--background', '#ffffff');
+          clonedBody.style.setProperty('--foreground', '#09090b');
+          clonedBody.style.setProperty('--card', '#ffffff');
+          clonedBody.style.setProperty('--card-foreground', '#09090b');
+          clonedBody.style.setProperty('--primary', '#18181b');
+          clonedBody.style.setProperty('--primary-foreground', '#fafafa');
+          clonedBody.style.setProperty('--secondary', '#f4f4f5');
+          clonedBody.style.setProperty('--muted', '#f4f4f5');
+          clonedBody.style.setProperty('--muted-foreground', '#71717a');
+          clonedBody.style.setProperty('--border', '#e4e4e7');
+        }
       });
 
       // Convert to blob and download
@@ -175,12 +221,19 @@ export default function Dashboard() {
         
         URL.revokeObjectURL(url);
         
+        // Remove export class
+        document.body.classList.remove('export-mode');
+        
         // Restore auto-refresh
         setAutoRefresh(wasAutoRefresh);
       });
     } catch (error) {
       console.error('Error exporting PNG:', error);
       alert('Failed to export PNG. Please try again.');
+      
+      // Cleanup on error
+      document.body.classList.remove('export-mode');
+      setAutoRefresh(wasAutoRefresh);
     }
   };
 
