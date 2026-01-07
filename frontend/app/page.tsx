@@ -17,6 +17,8 @@ import TimelineChart from '@/components/TimelineChart';
 import SpeedHistoryChart from '@/components/SpeedHistoryChart';
 import DateTimeFilter, { DateRange, PeriodType } from '@/components/DateTimeFilter';
 import { Download, Loader2, RefreshCw } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 export default function Dashboard() {
   const [currentStatus, setCurrentStatus] = useState<CurrentStatus | null>(null);
@@ -82,12 +84,104 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [autoRefresh]);
 
-  const handleExportPDF = () => {
-    alert('PDF export functionality - to be implemented');
+  const handleExportPDF = async () => {
+    try {
+      const element = document.getElementById('dashboard-content');
+      if (!element) return;
+
+      // Show loading state
+      const originalText = 'Exporting...';
+      
+      // Temporarily hide export button and toggle auto-refresh off
+      const wasAutoRefresh = autoRefresh;
+      setAutoRefresh(false);
+
+      // Wait a bit for any animations to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Capture the dashboard
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      // Calculate PDF dimensions
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgData = canvas.toDataURL('image/png');
+      
+      // Add multiple pages if content is too long
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= 297; // A4 height
+      
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= 297;
+      }
+      
+      // Save PDF
+      const fileName = `internet-monitor-${new Date().toISOString().slice(0, 10)}.pdf`;
+      pdf.save(fileName);
+
+      // Restore auto-refresh
+      setAutoRefresh(wasAutoRefresh);
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert('Failed to export PDF. Please try again.');
+    }
   };
 
-  const handleExportPNG = () => {
-    alert('PNG export functionality - to be implemented');
+  const handleExportPNG = async () => {
+    try {
+      const element = document.getElementById('dashboard-content');
+      if (!element) return;
+
+      // Temporarily toggle auto-refresh off
+      const wasAutoRefresh = autoRefresh;
+      setAutoRefresh(false);
+
+      // Wait a bit for any animations to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Capture the dashboard
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      // Convert to blob and download
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        const fileName = `internet-monitor-${new Date().toISOString().slice(0, 10)}.png`;
+        
+        link.href = url;
+        link.download = fileName;
+        link.click();
+        
+        URL.revokeObjectURL(url);
+        
+        // Restore auto-refresh
+        setAutoRefresh(wasAutoRefresh);
+      });
+    } catch (error) {
+      console.error('Error exporting PNG:', error);
+      alert('Failed to export PNG. Please try again.');
+    }
   };
 
   const handlePrint = () => {
@@ -108,7 +202,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-zinc-50 to-zinc-100 dark:from-zinc-900 dark:to-zinc-950">
       {/* Header */}
-      <header className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 z-50 shadow-sm">
+      <header className="bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 sticky top-0 z-50 shadow-sm no-export print:hidden">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -160,7 +254,7 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main id="dashboard-content" className="container mx-auto px-4 py-6 space-y-6">
         {/* Period Filter */}
         <DateTimeFilter onFilterChange={handleFilterChange} />
 

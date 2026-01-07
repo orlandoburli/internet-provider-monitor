@@ -123,3 +123,36 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Print and Export Styles */
+@media print {
+  /* Hide header/navigation during print */
+  header {
+    display: none !important;
+  }
+  
+  /* Ensure proper page breaks */
+  .card {
+    page-break-inside: avoid;
+  }
+  
+  /* White background for print */
+  body {
+    background: white !important;
+  }
+  
+  /* Remove shadows and borders that don't print well */
+  * {
+    box-shadow: none !important;
+  }
+}
+
+/* Export mode styles */
+.export-mode {
+  /* Hide interactive elements during export */
+  header,
+  button,
+  .no-export {
+    display: none !important;
+  }
+}
