@@ -4,9 +4,13 @@ import { useEffect, useRef } from 'react';
 import * as am5 from '@amcharts/amcharts5';
 import * as am5xy from '@amcharts/amcharts5/xy';
 import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
-import { api } from '@/lib/api-client';
+import { api, DateRangeParams } from '@/lib/api-client';
 
-export default function TimelineChart() {
+interface TimelineChartProps {
+  dateRange?: { from: Date; to: Date } | null;
+}
+
+export default function TimelineChart({ dateRange }: TimelineChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -69,7 +73,11 @@ export default function TimelineChart() {
     cursor.lineY.set('visible', false);
 
     // Load data
-    api.getTimeline(24).then((data) => {
+    const dateParams: DateRangeParams | undefined = dateRange
+      ? { from: dateRange.from, to: dateRange.to }
+      : undefined;
+
+    api.getTimeline(dateParams).then((data) => {
       const chartData = data.map((item) => ({
         timestamp: new Date(item.timestamp).getTime(),
         success_rate: item.success_rate,
@@ -81,7 +89,7 @@ export default function TimelineChart() {
     return () => {
       root.dispose();
     };
-  }, []);
+  }, [dateRange]);
 
   return <div ref={chartRef} style={{ width: '100%', height: '300px' }} />;
 }

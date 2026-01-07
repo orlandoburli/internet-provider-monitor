@@ -71,6 +71,12 @@ export interface OutageData {
   success_rate: number;
 }
 
+export interface DateRangeParams {
+  from?: Date;
+  to?: Date;
+  hours?: number;
+}
+
 async function fetchAPI<T>(endpoint: string): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`);
   if (!response.ok) {
@@ -79,14 +85,36 @@ async function fetchAPI<T>(endpoint: string): Promise<T> {
   return response.json();
 }
 
+function getHoursFromDateRange(from?: Date, to?: Date): number {
+  if (!from || !to) return 24;
+  const diffMs = to.getTime() - from.getTime();
+  const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+  return Math.max(1, diffHours);
+}
+
 export const api = {
   getCurrentStatus: () => fetchAPI<CurrentStatus>('/api/status/current'),
   getStatsToday: () => fetchAPI<StatsData>('/api/stats/today'),
   getStatsLast24h: () => fetchAPI<StatsData>('/api/stats/last24h'),
-  getTimeline: (hours = 24) => fetchAPI<TimelineData[]>(`/api/history/timeline?hours=${hours}`),
+  getTimeline: (params?: DateRangeParams) => {
+    const hours = params?.hours || getHoursFromDateRange(params?.from, params?.to);
+    return fetchAPI<TimelineData[]>(`/api/history/timeline?hours=${hours}`);
+  },
   getCurrentSpeedTests: () => fetchAPI<SpeedTest[]>('/api/speed/current'),
-  getSpeedStats: (hours = 24) => fetchAPI<SpeedStats[]>(`/api/speed/stats?hours=${hours}`),
-  getSpeedHistory: (hours = 24) => fetchAPI<SpeedHistoryData[]>(`/api/speed/history?hours=${hours}`),
-  getOutages: () => fetchAPI<OutageData[]>('/api/outages/recent'),
-  getPingHosts: (hours = 24) => fetchAPI<PingHost[]>(`/api/ping/hosts?hours=${hours}`),
+  getSpeedStats: (params?: DateRangeParams) => {
+    const hours = params?.hours || getHoursFromDateRange(params?.from, params?.to);
+    return fetchAPI<SpeedStats[]>(`/api/speed/stats?hours=${hours}`);
+  },
+  getSpeedHistory: (params?: DateRangeParams) => {
+    const hours = params?.hours || getHoursFromDateRange(params?.from, params?.to);
+    return fetchAPI<SpeedHistoryData[]>(`/api/speed/history?hours=${hours}`);
+  },
+  getOutages: (params?: DateRangeParams) => {
+    const hours = params?.hours || getHoursFromDateRange(params?.from, params?.to);
+    return fetchAPI<OutageData[]>(`/api/outages/recent?hours=${hours}`);
+  },
+  getPingHosts: (params?: DateRangeParams) => {
+    const hours = params?.hours || getHoursFromDateRange(params?.from, params?.to);
+    return fetchAPI<PingHost[]>(`/api/ping/hosts?hours=${hours}`);
+  },
 };

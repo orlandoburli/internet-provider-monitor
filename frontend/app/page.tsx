@@ -12,9 +12,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { api, CurrentStatus, StatsData, SpeedTest, SpeedStats, PingHost } from '@/lib/api-client';
+import { api, CurrentStatus, StatsData, SpeedTest, SpeedStats, PingHost, DateRangeParams } from '@/lib/api-client';
 import TimelineChart from '@/components/TimelineChart';
 import SpeedHistoryChart from '@/components/SpeedHistoryChart';
+import DateTimeFilter, { DateRange, PeriodType } from '@/components/DateTimeFilter';
 import { Download, Loader2, RefreshCw } from 'lucide-react';
 
 export default function Dashboard() {
@@ -28,17 +29,23 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [dateRange, setDateRange] = useState<DateRange | null>(null);
+  const [periodType, setPeriodType] = useState<PeriodType>('last-24-hours');
 
   const loadAllData = async () => {
     try {
+      const dateParams: DateRangeParams | undefined = dateRange
+        ? { from: dateRange.from, to: dateRange.to }
+        : undefined;
+
       const [status, today, last24h, speedTests, speedStatsData, pingData, outages] = await Promise.all([
         api.getCurrentStatus(),
         api.getStatsToday(),
         api.getStatsLast24h(),
         api.getCurrentSpeedTests(),
-        api.getSpeedStats(24),
-        api.getPingHosts(24),
-        api.getOutages(),
+        api.getSpeedStats(dateParams),
+        api.getPingHosts(dateParams),
+        api.getOutages(dateParams),
       ]);
 
       setCurrentStatus(status);
@@ -56,9 +63,14 @@ export default function Dashboard() {
     }
   };
 
+  const handleFilterChange = (range: DateRange, type: PeriodType) => {
+    setDateRange(range);
+    setPeriodType(type);
+  };
+
   useEffect(() => {
     loadAllData();
-  }, []);
+  }, [dateRange]);
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -149,6 +161,9 @@ export default function Dashboard() {
       </header>
 
       <main className="container mx-auto px-4 py-6 space-y-6">
+        {/* Period Filter */}
+        <DateTimeFilter onFilterChange={handleFilterChange} />
+
         {/* Current Status */}
         <Card className="border-2">
           <CardHeader className="pb-3">
@@ -206,7 +221,7 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader>
-              <CardDescription>Outages (24h)</CardDescription>
+              <CardDescription>Outages ({periodType.replace(/-/g, ' ')})</CardDescription>
               <CardTitle className="text-3xl text-red-600">
                 {outagesCount}
               </CardTitle>
@@ -223,10 +238,10 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle>Connection Timeline (Last 24h)</CardTitle>
+              <CardTitle>Connection Timeline ({periodType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())})</CardTitle>
             </CardHeader>
             <CardContent>
-              <TimelineChart />
+              <TimelineChart dateRange={dateRange} />
             </CardContent>
           </Card>
 
@@ -263,10 +278,10 @@ export default function Dashboard() {
         {/* Speed History Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>Speed Test History by Provider (Last 24h)</CardTitle>
+            <CardTitle>Speed Test History by Provider ({periodType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())})</CardTitle>
           </CardHeader>
           <CardContent>
-            <SpeedHistoryChart />
+            <SpeedHistoryChart dateRange={dateRange} />
           </CardContent>
         </Card>
 
@@ -274,7 +289,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card>
             <CardHeader>
-              <CardTitle>Speed Test Statistics (Last 24h)</CardTitle>
+              <CardTitle>Speed Test Statistics ({periodType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())})</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -313,7 +328,7 @@ export default function Dashboard() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Ping Statistics by Host (Last 24h)</CardTitle>
+              <CardTitle>Ping Statistics by Host ({periodType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())})</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">

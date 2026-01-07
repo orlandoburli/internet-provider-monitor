@@ -4,9 +4,13 @@ import { useEffect, useRef } from 'react';
 import * as am5 from '@amcharts/amcharts5';
 import * as am5xy from '@amcharts/amcharts5/xy';
 import am5themes_Animated from '@amcharts/amcharts5/themes/Animated';
-import { api } from '@/lib/api-client';
+import { api, DateRangeParams } from '@/lib/api-client';
 
-export default function SpeedHistoryChart() {
+interface SpeedHistoryChartProps {
+  dateRange?: { from: Date; to: Date } | null;
+}
+
+export default function SpeedHistoryChart({ dateRange }: SpeedHistoryChartProps) {
   const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,7 +63,11 @@ export default function SpeedHistoryChart() {
     };
 
     // Load data and create series
-    api.getSpeedHistory(24).then((data) => {
+    const dateParams: DateRangeParams | undefined = dateRange
+      ? { from: dateRange.from, to: dateRange.to }
+      : undefined;
+
+    api.getSpeedHistory(dateParams).then((data) => {
       const providerData: { [key: string]: any[] } = {};
 
       // Group data by provider
@@ -128,7 +136,7 @@ export default function SpeedHistoryChart() {
     return () => {
       root.dispose();
     };
-  }, []);
+  }, [dateRange]);
 
   return <div ref={chartRef} style={{ width: '100%', height: '400px' }} />;
 }

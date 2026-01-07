@@ -269,6 +269,8 @@ def speed_stats():
 @app.route('/api/outages/recent')
 def outages_recent():
     """Get recent outages"""
+    hours = int(request.args.get('hours', 24))
+    
     query = """
         SELECT 
             timestamp,
@@ -277,12 +279,12 @@ def outages_recent():
         FROM connection_checks
         WHERE 
             connection_status = 'offline'
-            AND timestamp >= NOW() - INTERVAL '24 hours'
+            AND timestamp >= NOW() - INTERVAL '%s hours'
         ORDER BY timestamp DESC
         LIMIT 50
     """
     
-    results = db.execute_query(query)
+    results = db.execute_query(query, (hours,))
     
     return jsonify([{
         'timestamp': row['timestamp'].isoformat(),
