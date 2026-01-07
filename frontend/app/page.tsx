@@ -94,11 +94,11 @@ export default function Dashboard() {
       // Temporarily hide export button and toggle auto-refresh off
       setAutoRefresh(false);
 
-      // Wait a bit for any animations to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Add export class to convert colors
+      // Add export class BEFORE capture to apply RGB color overrides
       document.body.classList.add('export-mode');
+
+      // Wait for CSS to apply
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Capture the dashboard
       const canvas = await html2canvas(element, {
@@ -110,18 +110,43 @@ export default function Dashboard() {
           return element.classList?.contains('no-export');
         },
         onclone: (clonedDoc) => {
-          // Convert modern color formats to RGB
+          // Aggressively convert all oklch colors to RGB
           const clonedBody = clonedDoc.body;
-          clonedBody.style.setProperty('--background', '#ffffff');
-          clonedBody.style.setProperty('--foreground', '#09090b');
-          clonedBody.style.setProperty('--card', '#ffffff');
-          clonedBody.style.setProperty('--card-foreground', '#09090b');
-          clonedBody.style.setProperty('--primary', '#18181b');
-          clonedBody.style.setProperty('--primary-foreground', '#fafafa');
-          clonedBody.style.setProperty('--secondary', '#f4f4f5');
-          clonedBody.style.setProperty('--muted', '#f4f4f5');
-          clonedBody.style.setProperty('--muted-foreground', '#71717a');
-          clonedBody.style.setProperty('--border', '#e4e4e7');
+          const clonedRoot = clonedDoc.documentElement;
+          
+          // Set CSS custom properties to RGB
+          const rgbVars: [string, string][] = [
+            ['--background', '#ffffff'],
+            ['--foreground', '#09090b'],
+            ['--card', '#ffffff'],
+            ['--card-foreground', '#09090b'],
+            ['--primary', '#18181b'],
+            ['--primary-foreground', '#fafafa'],
+            ['--secondary', '#f4f4f5'],
+            ['--muted', '#f4f4f5'],
+            ['--muted-foreground', '#71717a'],
+            ['--border', '#e4e4e7'],
+            ['--input', '#e4e4e7'],
+            ['--ring', '#a1a1aa'],
+          ];
+          
+          rgbVars.forEach(([prop, value]) => {
+            clonedRoot.style.setProperty(prop, value);
+            clonedBody.style.setProperty(prop, value);
+          });
+
+          // Force RGB colors on all elements with background
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((el: Element) => {
+            if (el instanceof HTMLElement) {
+              const style = el.style;
+              
+              // Clear any inline oklch colors
+              if (style.backgroundColor) style.backgroundColor = '';
+              if (style.color) style.color = '';
+              if (style.borderColor) style.borderColor = '';
+            }
+          });
         }
       });
 
@@ -176,11 +201,11 @@ export default function Dashboard() {
       // Temporarily toggle auto-refresh off
       setAutoRefresh(false);
 
-      // Wait a bit for any animations to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Add export class to convert colors
+      // Add export class BEFORE capture to apply RGB color overrides
       document.body.classList.add('export-mode');
+
+      // Wait for CSS to apply
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Capture the dashboard
       const canvas = await html2canvas(element, {
@@ -192,18 +217,43 @@ export default function Dashboard() {
           return element.classList?.contains('no-export');
         },
         onclone: (clonedDoc) => {
-          // Convert modern color formats to RGB
+          // Aggressively convert all oklch colors to RGB
           const clonedBody = clonedDoc.body;
-          clonedBody.style.setProperty('--background', '#ffffff');
-          clonedBody.style.setProperty('--foreground', '#09090b');
-          clonedBody.style.setProperty('--card', '#ffffff');
-          clonedBody.style.setProperty('--card-foreground', '#09090b');
-          clonedBody.style.setProperty('--primary', '#18181b');
-          clonedBody.style.setProperty('--primary-foreground', '#fafafa');
-          clonedBody.style.setProperty('--secondary', '#f4f4f5');
-          clonedBody.style.setProperty('--muted', '#f4f4f5');
-          clonedBody.style.setProperty('--muted-foreground', '#71717a');
-          clonedBody.style.setProperty('--border', '#e4e4e7');
+          const clonedRoot = clonedDoc.documentElement;
+          
+          // Set CSS custom properties to RGB
+          const rgbVars: [string, string][] = [
+            ['--background', '#ffffff'],
+            ['--foreground', '#09090b'],
+            ['--card', '#ffffff'],
+            ['--card-foreground', '#09090b'],
+            ['--primary', '#18181b'],
+            ['--primary-foreground', '#fafafa'],
+            ['--secondary', '#f4f4f5'],
+            ['--muted', '#f4f4f5'],
+            ['--muted-foreground', '#71717a'],
+            ['--border', '#e4e4e7'],
+            ['--input', '#e4e4e7'],
+            ['--ring', '#a1a1aa'],
+          ];
+          
+          rgbVars.forEach(([prop, value]) => {
+            clonedRoot.style.setProperty(prop, value);
+            clonedBody.style.setProperty(prop, value);
+          });
+
+          // Force RGB colors on all elements with background
+          const allElements = clonedDoc.querySelectorAll('*');
+          allElements.forEach((el: Element) => {
+            if (el instanceof HTMLElement) {
+              const style = el.style;
+              
+              // Clear any inline oklch colors
+              if (style.backgroundColor) style.backgroundColor = '';
+              if (style.color) style.color = '';
+              if (style.borderColor) style.borderColor = '';
+            }
+          });
         }
       });
 

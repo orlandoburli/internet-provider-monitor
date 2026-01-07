@@ -147,7 +147,7 @@
   }
 }
 
-/* Export mode styles */
+/* Export mode styles - Force RGB colors for html2canvas compatibility */
 .export-mode {
   /* Hide interactive elements during export */
   header,
@@ -155,4 +155,90 @@
   .no-export {
     display: none !important;
   }
+}
+
+/* Force RGB colors during export to avoid oklch() parsing errors */
+.export-mode,
+.export-mode * {
+  /* Override all oklch colors with RGB equivalents */
+  background-color: inherit !important;
+  color: inherit !important;
+  border-color: #e4e4e7 !important;
+}
+
+.export-mode {
+  background: #ffffff !important;
+  color: #09090b !important;
+}
+
+.export-mode .bg-white,
+.export-mode [class*="bg-white"] {
+  background-color: #ffffff !important;
+}
+
+.export-mode .bg-zinc-50,
+.export-mode [class*="bg-zinc-50"] {
+  background-color: #fafafa !important;
+}
+
+.export-mode .bg-zinc-100,
+.export-mode [class*="bg-zinc-100"] {
+  background-color: #f4f4f5 !important;
+}
+
+.export-mode .bg-zinc-800,
+.export-mode [class*="bg-zinc-800"] {
+  background-color: #27272a !important;
+}
+
+.export-mode .bg-zinc-900,
+.export-mode [class*="bg-zinc-900"] {
+  background-color: #18181b !important;
+}
+
+.export-mode .text-zinc-900,
+.export-mode [class*="text-zinc-900"] {
+  color: #18181b !important;
+}
+
+.export-mode .text-muted-foreground {
+  color: #71717a !important;
+}
+
+.export-mode .border-zinc-200,
+.export-mode [class*="border-zinc-200"] {
+  border-color: #e4e4e7 !important;
+}
+
+.export-mode .border-zinc-800,
+.export-mode [class*="border-zinc-800"] {
+  border-color: #27272a !important;
+}
+
+.export-mode .bg-gradient-to-br {
+  background: linear-gradient(to bottom right, #fafafa, #f4f4f5) !important;
+}
+
+.export-mode .bg-blue-600 {
+  background-color: #2563eb !important;
+}
+
+.export-mode .bg-green-600 {
+  background-color: #16a34a !important;
+}
+
+.export-mode .bg-red-600 {
+  background-color: #dc2626 !important;
+}
+
+.export-mode .text-blue-600 {
+  color: #2563eb !important;
+}
+
+.export-mode .text-green-600 {
+  color: #16a34a !important;
+}
+
+.export-mode .text-red-600 {
+  color: #dc2626 !important;
 }
